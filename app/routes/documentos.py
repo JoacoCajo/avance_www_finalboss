@@ -52,10 +52,13 @@ async def api_listar_documentos(
         raise HTTPException(status_code=500, detail=f"Error interno al listar documentos: {str(e)}")
 
 @router.get("/{documento_id}", response_model=DocumentoOutput)
-async def api_get_documento(documento_id: int):
+async def api_get_documento(
+    documento_id: int,
+    db: Session = Depends(get_db)
+):
     """Obtiene un documento por su ID."""
     try:
-        documento = documento_model.busqueda_por_id(documento_id)
+        documento = documento_model.busqueda_por_id(db=db, documento_id=documento_id)
         if documento is None:
             raise HTTPException(status_code=404, detail="Documento no encontrado")
         # CORRECCIÓN: Faltaba retornar el documento
@@ -63,6 +66,21 @@ async def api_get_documento(documento_id: int):
     except Exception as e:
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=f"Error interno al buscar documento: {str(e)}")
+
+@router.get("/buscar-por-isbn/{isbn}", response_model=DocumentoOutput)
+async def api_buscar_por_isbn(
+    isbn: str,
+    db: Session = Depends(get_db)
+):
+    """Obtiene un documento por su ISBN (campo edicion)."""
+    try:
+        documento = documento_model.busqueda_por_isbn(db=db, isbn=isbn)
+        if documento is None:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        return DocumentoOutput.model_validate(documento)
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=f"Error interno al buscar documento por ISBN: {str(e)}")
 
 @router.patch("/{documento_id}", response_model=DocumentoOutput)
 async def api_actualizar_documento(

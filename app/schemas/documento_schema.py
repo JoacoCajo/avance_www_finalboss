@@ -12,6 +12,8 @@ class DocumentoCrear(BaseModel):
     edicion: Optional[str] = None
     categoria: Optional[str] = None
     tipo_medio: str
+    existencias: Optional[int] = None
+    disponible: Optional[bool] = True
 
 
 class DocumentoOutput(DocumentoCrear):
@@ -40,3 +42,5 @@ class DocumentoActualizar(BaseModel):
     edicion: Optional[str] = None
     categoria: Optional[str] = None
     tipo_medio: Optional[str] = None
+    existencias: Optional[int] = None
+    disponible: Optional[bool] = None

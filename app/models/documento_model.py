@@ -26,7 +26,9 @@ def ingresar_documento(db: Session, data: dict) -> Documento:
             anio=data.get('anio'),
             edicion=data.get('edicion'),
             categoria=data.get('categoria'),
-            tipo_medio=data.get('tipo_medio')
+            tipo_medio=data.get('tipo_medio'),
+            existencias=data.get('existencias'),
+            disponible=data.get('disponible', True)
         )
         
         db.add(nuevo_documento)
@@ -66,6 +68,20 @@ def busqueda_por_id(db: Session, documento_id: int) -> Optional[Documento]:
         raise HTTPException(
             status_code=500, 
             detail="Error interno al buscar documento por ID"
+        )
+
+def busqueda_por_isbn(db: Session, isbn: str) -> Optional[Documento]:
+    """
+    Busca un documento por su ISBN (campo edicion).
+    """
+    try:
+        documento = db.query(Documento).filter(Documento.edicion == isbn).first()
+        return documento
+    except Exception as e:
+        print(f"Error en DB (busqueda_por_isbn): {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error interno al buscar documento por ISBN"
         )
 
 

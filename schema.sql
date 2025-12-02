@@ -76,10 +76,13 @@ CREATE INDEX idx_tokens_validacion_expiracion ON tokens_validacion(fecha_expirac
 -- ============================================
 CREATE TABLE documentos (
     id SERIAL PRIMARY KEY,
+    isbn VARCHAR(20) UNIQUE,
     tipo VARCHAR(50) NOT NULL,
     titulo VARCHAR(255) NOT NULL,
     autor VARCHAR(255),
     editorial VARCHAR(255),
+    existencias INTEGER NOT NULL DEFAULT 0,
+    disponible(if existencias > 0) BOOLEAN NOT NULL DEFAULT true,
     anio INTEGER,
     edicion VARCHAR(50),
     categoria VARCHAR(100),

@@ -16,6 +16,40 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 # DÍA 1: CRUD USUARIOS
 # ============================================
 
+@router.get("/buscar-por-rut/{rut}", response_model=UsuarioResponse)
+async def buscar_usuario_por_rut(
+    rut: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Busca un usuario por RUT sin requerir autenticación.
+    Se formatea el RUT antes de consultar.
+    """
+    rut_formateado = formatear_rut(rut)
+    usuario = db.query(Usuario).filter(Usuario.rut == rut_formateado).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    usuario_dict = {
+        "id": usuario.id,
+        "rut": usuario.rut,
+        "nombres": usuario.nombres,
+        "apellidos": usuario.apellidos,
+        "email": usuario.email,
+        "rol": usuario.rol,
+        "activo": usuario.activo,
+        "foto_url": usuario.foto_url,
+        "sancionado": usuario.esta_sancionado(),
+        "fecha_sancion_hasta": usuario.fecha_sancion_hasta,
+        "created_at": usuario.created_at,
+    }
+
+    return UsuarioResponse(**usuario_dict)
+
 @router.post("/registrar", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def registrar_usuario_completo(
     usuario_data: UsuarioCreate,
