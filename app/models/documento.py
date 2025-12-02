@@ -14,11 +14,12 @@ class Documento(Base):
     titulo = Column(String(255), nullable=False, index=True)
     autor = Column(String(255), nullable=False)
     editorial = Column(String(100), nullable=True)
+    resumen = Column(String(1000), nullable=True)
     anio = Column(Integer, nullable=True)
     edicion = Column(String(50), nullable=True)
     categoria = Column(String(100), nullable=True, index=True)
     tipo_medio = Column(String(50), nullable=True)  # fisico, digital, cd, dvd, etc.
-    existencias = Column(Integer, server_default=FetchedValue())
+    existencias = Column(Integer, nullable=True)
     disponible = Column(Boolean, server_default=FetchedValue())
     created_at = Column(DateTime, default=datetime.utcnow)
     

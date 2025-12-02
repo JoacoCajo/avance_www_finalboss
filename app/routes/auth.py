@@ -41,8 +41,8 @@ def register(usuario_data: UsuarioCreate, db: Session = Depends(get_db)):
         nombres=usuario_data.nombres,
         apellidos=usuario_data.apellidos,
         email=usuario_data.email.lower(),
-        rol=usuario_data.rol,
-        activo=False
+        rol="usuario",  # Forzamos rol usuario
+        activo=True     # Activación automática
     )
     nuevo_usuario.set_password(usuario_data.password)
     
@@ -74,12 +74,6 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
-        )
-    
-    if not usuario.activo:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario pendiente de activación"
         )
     
     if usuario.esta_sancionado():

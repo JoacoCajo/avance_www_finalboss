@@ -25,9 +25,9 @@ async def api_creacion_documentos(
     validacion_categoria(documento_data.categoria) 
     
     try:
-        # No enviar campos autogenerados (existencias, disponible)
+        # No enviar campos autogenerados (disponible)
         datos_dict = documento_data.model_dump(
-            exclude={"existencias", "disponible"},
+            exclude={"disponible"},
             exclude_none=True
         )
         nuevo_documento = documento_model.ingresar_documento(db=db, data=datos_dict)
@@ -88,9 +88,10 @@ async def api_buscar_por_isbn(
 
 @router.patch("/{documento_id}", response_model=DocumentoOutput)
 async def api_actualizar_documento(
-    documento_id: int, 
-    documento_data: DocumentoActualizar, 
-    es_admin: bool = Depends(verificacion)
+    documento_id: int,
+    documento_data: DocumentoActualizar,
+    es_admin: bool = Depends(verificacion),
+    db: Session = Depends(get_db)
 ):
     """Actualiza parcialmente un documento por su ID."""
     datos_a_actualizar = documento_data.model_dump(exclude_unset=True)
@@ -103,7 +104,7 @@ async def api_actualizar_documento(
         validacion_categoria(datos_a_actualizar["categoria"])
         
     try:
-        documento_actualizado = documento_model.actualizar_documento(documento_id, datos_a_actualizar)
+        documento_actualizado = documento_model.actualizar_documento(db=db, id=documento_id, data=datos_a_actualizar)
 
         if documento_actualizado is None:
             raise HTTPException(status_code=404, detail="Documento no encontrado")
