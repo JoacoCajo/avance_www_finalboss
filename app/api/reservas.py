@@ -41,12 +41,6 @@ async def crear_reserva(
             detail=f"Documento con id {reserva_data.documento_id} no encontrado"
         )
     
-    if not documento.activo:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El documento no está disponible para reservas"
-        )
-    
     # Verificar que el usuario no tenga ya una reserva activa del mismo documento
     reserva_existente = db.query(Reserva).filter(
         Reserva.usuario_id == current_user.id,

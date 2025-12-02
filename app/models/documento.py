@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
 from app.database import Base
 
@@ -19,7 +18,6 @@ class Documento(Base):
     edicion = Column(String(50), nullable=True)
     categoria = Column(String(100), nullable=True, index=True)
     tipo_medio = Column(String(50), nullable=True)  # fisico, digital, cd, dvd, etc.
-    activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relaciones (serán definidas por ROL 2 y ROL 3)

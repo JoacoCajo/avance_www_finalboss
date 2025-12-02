@@ -9,7 +9,7 @@ from app.models.documento import Documento
 
 def listar_documentos(db: Session, page: int, size: int) -> Tuple[List[Documento], int]:
     """
-    Lista todos los documentos activos con paginación.
+    Lista todos los documentos con paginación.
     
     Args:
         db: Sesión de SQLAlchemy
@@ -22,15 +22,11 @@ def listar_documentos(db: Session, page: int, size: int) -> Tuple[List[Documento
     try:
         offset = (page - 1) * size
         
-        # Contar total de documentos activos
-        total_items = db.query(func.count(Documento.id)).filter(
-            Documento.activo == True
-        ).scalar()
+        # Contar total de documentos
+        total_items = db.query(func.count(Documento.id)).scalar()
         
         # Obtener documentos paginados
-        documentos = db.query(Documento).filter(
-            Documento.activo == True
-        ).order_by(Documento.id).offset(offset).limit(size).all()
+        documentos = db.query(Documento).order_by(Documento.id).offset(offset).limit(size).all()
         
         return documentos, total_items
     
@@ -61,7 +57,6 @@ def busqueda_basica(db: Session, busqueda: str, page: int, size: int) -> Tuple[L
         
         # Crear query base con filtros
         query_base = db.query(Documento).filter(
-            Documento.activo == True,
             (Documento.titulo.ilike(termino_ilike) | 
              Documento.autor.ilike(termino_ilike))
         )
@@ -100,7 +95,6 @@ def lista_categorias(db: Session) -> List[dict]:
             Documento.categoria,
             func.count(Documento.id).label('conteo')
         ).filter(
-            Documento.activo == True,
             Documento.categoria.isnot(None)
         ).group_by(
             Documento.categoria
@@ -141,10 +135,7 @@ def documento_por_categoria(db: Session, categoria: str, page: int, size: int) -
         offset = (page - 1) * size
         
         # Crear query base con filtro de categoría
-        query_base = db.query(Documento).filter(
-            Documento.activo == True,
-            Documento.categoria == categoria
-        )
+        query_base = db.query(Documento).filter(Documento.categoria == categoria)
         
         # Contar total de resultados
         total_items = query_base.count()
@@ -194,7 +185,7 @@ def busqueda_avanzada(
         offset = (page - 1) * size
         
         # Query base
-        query_base = db.query(Documento).filter(Documento.activo == True)
+        query_base = db.query(Documento)
         
         # Aplicar filtros opcionales
         if tipo:
@@ -209,10 +200,10 @@ def busqueda_avanzada(
             )
         
         if año_desde:
-            query_base = query_base.filter(Documento.año >= año_desde)
+            query_base = query_base.filter(Documento.anio >= año_desde)
         
         if año_hasta:
-            query_base = query_base.filter(Documento.año <= año_hasta)
+            query_base = query_base.filter(Documento.anio <= año_hasta)
         
         # Contar total
         total_items = query_base.count()
@@ -243,24 +234,19 @@ def obtener_estadisticas(db: Session) -> dict:
         Diccionario con estadísticas
     """
     try:
-        # Total de documentos activos
-        total_documentos = db.query(func.count(Documento.id)).filter(
-            Documento.activo == True
-        ).scalar()
+        # Total de documentos
+        total_documentos = db.query(func.count(Documento.id)).scalar()
         
         # Documentos por tipo
         por_tipo = db.query(
             Documento.tipo,
             func.count(Documento.id).label('cantidad')
-        ).filter(
-            Documento.activo == True
         ).group_by(Documento.tipo).all()
         
         # Total de categorías
         total_categorias = db.query(
             func.count(func.distinct(Documento.categoria))
         ).filter(
-            Documento.activo == True,
             Documento.categoria.isnot(None)
         ).scalar()
         

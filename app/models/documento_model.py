@@ -23,7 +23,7 @@ def ingresar_documento(db: Session, data: dict) -> Documento:
             titulo=data.get('titulo'),
             autor=data.get('autor'),
             editorial=data.get('editorial'),
-            año=data.get('anio'),  # Nota: 'anio' en data, 'año' en modelo
+            anio=data.get('anio'),
             edicion=data.get('edicion'),
             categoria=data.get('categoria'),
             tipo_medio=data.get('tipo_medio')
@@ -57,10 +57,7 @@ def busqueda_por_id(db: Session, documento_id: int) -> Optional[Documento]:
         Documento o None si no existe
     """
     try:
-        documento = db.query(Documento).filter(
-            Documento.id == documento_id,
-            Documento.activo == True
-        ).first()
+        documento = db.query(Documento).filter(Documento.id == documento_id).first()
         
         return documento
     
@@ -92,8 +89,7 @@ def actualizar_documento(db: Session, id: int, data: dict) -> Optional[Documento
         
         # Actualizar solo los campos que vienen en data
         for key, value in data.items():
-            # Mapear 'anio' a 'año' si es necesario
-            field_name = 'año' if key == 'anio' else key
+            field_name = 'anio' if key == 'anio' else key
             
             if hasattr(documento, field_name):
                 setattr(documento, field_name, value)
@@ -115,8 +111,7 @@ def actualizar_documento(db: Session, id: int, data: dict) -> Optional[Documento
 
 def eliminar_documento(db: Session, id: int) -> bool:
     """
-    Elimina (desactiva) un documento.
-    Eliminación lógica: solo marca activo=False.
+    Elimina un documento de forma permanente.
     
     Args:
         db: Sesión de SQLAlchemy
@@ -131,10 +126,10 @@ def eliminar_documento(db: Session, id: int) -> bool:
         if documento is None:
             return False
         
-        documento.activo = False
+        db.delete(documento)
         db.commit()
         
-        print(f"Documento {id} marcado como inactivo")
+        print(f"Documento {id} eliminado")
         return True
     
     except Exception as e:
@@ -167,7 +162,7 @@ def listar_documentos(
         Lista de Documentos
     """
     try:
-        query = db.query(Documento).filter(Documento.activo == True)
+        query = db.query(Documento)
         
         if tipo:
             query = query.filter(Documento.tipo == tipo)
@@ -209,7 +204,6 @@ def buscar_documentos(
         termino_busqueda = f"%{termino}%"
         
         documentos = db.query(Documento).filter(
-            Documento.activo == True,
             (Documento.titulo.ilike(termino_busqueda) | 
              Documento.autor.ilike(termino_busqueda))
         ).offset(skip).limit(limit).all()
