@@ -25,7 +25,11 @@ async def api_creacion_documentos(
     validacion_categoria(documento_data.categoria) 
     
     try:
-        datos_dict = documento_data.model_dump()
+        # No enviar campos autogenerados (existencias, disponible)
+        datos_dict = documento_data.model_dump(
+            exclude={"existencias", "disponible"},
+            exclude_none=True
+        )
         nuevo_documento = documento_model.ingresar_documento(db=db, data=datos_dict)
 
         documento_guardado = DocumentoOutput.model_validate(nuevo_documento)

@@ -18,6 +18,9 @@ def ingresar_documento(db: Session, data: dict) -> Documento:
         Documento: El objeto Documento creado
     """
     try:
+        # Evitar enviar columnas generadas
+        data = {k: v for k, v in data.items() if k not in {"disponible", "existencias"}}
+
         nuevo_documento = Documento(
             tipo=data.get('tipo'),
             titulo=data.get('titulo'),
@@ -26,9 +29,7 @@ def ingresar_documento(db: Session, data: dict) -> Documento:
             anio=data.get('anio'),
             edicion=data.get('edicion'),
             categoria=data.get('categoria'),
-            tipo_medio=data.get('tipo_medio'),
-            existencias=data.get('existencias'),
-            disponible=data.get('disponible', True)
+            tipo_medio=data.get('tipo_medio')
         )
         
         db.add(nuevo_documento)

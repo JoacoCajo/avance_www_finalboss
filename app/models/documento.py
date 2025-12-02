@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, FetchedValue
 from datetime import datetime
 from app.database import Base
 
@@ -18,8 +18,8 @@ class Documento(Base):
     edicion = Column(String(50), nullable=True)
     categoria = Column(String(100), nullable=True, index=True)
     tipo_medio = Column(String(50), nullable=True)  # fisico, digital, cd, dvd, etc.
-    existencias = Column(Integer, nullable=True)
-    disponible = Column(Boolean, default=True, nullable=False)
+    existencias = Column(Integer, server_default=FetchedValue())
+    disponible = Column(Boolean, server_default=FetchedValue())
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relaciones (serán definidas por ROL 2 y ROL 3)

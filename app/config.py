@@ -21,6 +21,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:4200",
+        "http://[::1]:8080",
+        "http://[::1]:5173",
+        "http://[::1]:3000",
+        "http://[::1]:4200",
     ]
     
     class Config:

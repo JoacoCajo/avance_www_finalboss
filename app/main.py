@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app.routes import auth, admin, documentos, catalogo
-from app.api import ejemplares, devoluciones, reservas, prestamos, usuarios
+from app.api import ejemplares, devoluciones, reservas, prestamos, usuarios, dashboard
 
 
 # Crear tablas
@@ -33,6 +33,7 @@ app.include_router(devoluciones.router, prefix=settings.API_V1_STR)
 app.include_router(reservas.router, prefix=settings.API_V1_STR)
 app.include_router(prestamos.router, prefix=settings.API_V1_STR)
 app.include_router(usuarios.router, prefix=settings.API_V1_STR, tags=["Usuarios"])
+app.include_router(dashboard.router, prefix=settings.API_V1_STR, tags=["Dashboard"])
 
 
 #Routes ROL 2
