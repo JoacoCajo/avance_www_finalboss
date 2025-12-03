@@ -26,5 +26,31 @@ Para visualizar la página, se deberán seguir estos pasos:
 5. Para ver la presentación de la página, pulsar el botón con forma de *"play"*, ubicado arriba a la derecha.
 6. Probar los distintos botones, o utilizando las flechas de desplazamiento que apareceran en la parte central inferior de la página.
 
-## Observaciones
+## COMO EJECUTAR EL PROYECTO:
+1) Descargar el proyecto a través de git clone
+2) CONFIGURAR LA BASE DE DATOS:
+    2.1) ejecutan el Docker: docker-compose up -d postgres
+    2.2) ejecutar: docker exec -i biblioteca_postgres \
+        psql -U biblioteca_user -d biblioteca_db < schema.sql
+
+    2.3) Verificar que está todo correcto:
+
+        docker exec -it biblioteca_postgres bash
+
+        luego, estando en la consola bash:
+
+        psql -U biblioteca_user -d biblioteca_db
+
+        en este punto ya están en la consola de postgres:
+
+        SELECT * FROM bibliotecas;
+        SELECT * FROM usuarios;
+
+3) Creamos un entorno virtual, entramos a él y cargamos el archivo requirements.txt para tener todas librerias y módulos disponibles.
+4) Ejecutamos, en dos consolas distintas, frontend y backend, de la siguiente forma:
+    4.1) Para frontend: npm run dev (importante hacer 'npm install' antes)
+    4.2) Para backend: python3 -m uvicorn app.main:app --reload --port 8009
+5) Ingresamos a localhost:8080.
+6) La página se muestra correctamente.
+
 
