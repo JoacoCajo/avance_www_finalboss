@@ -17,6 +17,7 @@ class Prestamo(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tipo_prestamo = Column(Enum(TipoPrestamo), nullable=False)
+    isbn_asociado = Column(String(50), nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     biblioteca_id = Column(Integer, ForeignKey("bibliotecas.id"), nullable=False)
     fecha_prestamo = Column(DateTime, nullable=False)

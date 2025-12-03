@@ -15,6 +15,7 @@ class Documento(Base):
     autor = Column(String(255), nullable=False)
     editorial = Column(String(100), nullable=True)
     resumen = Column(String(1000), nullable=True)
+    link = Column(String(500), nullable=True)  # URL de portada
     anio = Column(Integer, nullable=True)
     edicion = Column(String(50), nullable=True)
     categoria = Column(String(100), nullable=True, index=True)

@@ -21,6 +21,10 @@ class PrestamoSimpleCreate(BaseModel):
     tipo_prestamo: str = "domicilio"
     biblioteca_id: Optional[int] = None
 
+class DevolucionRutIsbn(BaseModel):
+    rut: str
+    isbn: str
+
 @router.post("/registrar-desde-rut-isbn", response_model=dict)
 def registrar_prestamo_desde_rut_isbn(
     data: PrestamoSimpleCreate,
@@ -37,6 +41,14 @@ def registrar_prestamo_desde_rut_isbn(
     usuario = db.query(Usuario).filter(Usuario.rut == rut_formateado).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado para ese RUT")
+
+    # Restringir máximo 3 préstamos activos por usuario
+    prestamos_activos = db.query(Prestamo).filter(
+        Prestamo.usuario_id == usuario.id,
+        Prestamo.estado == EstadoPrestamo.activo
+    ).count()
+    if prestamos_activos >= 3:
+        raise HTTPException(status_code=400, detail="El usuario ya tiene 3 préstamos activos")
 
     documento = db.query(Documento).filter(Documento.edicion == data.isbn).first()
     if not documento:
@@ -61,6 +73,12 @@ def registrar_prestamo_desde_rut_isbn(
     if ejemplar.estado != "disponible":
         raise HTTPException(status_code=400, detail="No hay ejemplares disponibles para este material")
 
+    # Ajustar existencias
+    if documento.existencias is None:
+        documento.existencias = 0
+    if documento.existencias > 0:
+        documento.existencias -= 1
+
     # Biblioteca
     biblioteca_id = data.biblioteca_id
     if biblioteca_id is None:
@@ -80,6 +98,7 @@ def registrar_prestamo_desde_rut_isbn(
     ahora = datetime.utcnow()
     prestamo = Prestamo(
         tipo_prestamo=tipo_enum,
+        isbn_asociado=data.isbn,
         usuario_id=usuario.id,
         biblioteca_id=biblioteca_id,
         fecha_prestamo=ahora,
@@ -106,6 +125,7 @@ def registrar_prestamo_desde_rut_isbn(
             "estado": prestamo.estado.value if hasattr(prestamo.estado, "value") else prestamo.estado,
             "fecha_prestamo": prestamo.fecha_prestamo,
             "fecha_devolucion_estimada": prestamo.fecha_devolucion_estimada,
+            "isbn_asociado": prestamo.isbn_asociado,
         },
         "usuario": {
             "id": usuario.id,
@@ -119,12 +139,40 @@ def registrar_prestamo_desde_rut_isbn(
             "autor": documento.autor,
             "anio": documento.anio,
             "edicion": documento.edicion,
+            "existencias": documento.existencias,
         },
         "detalle": {
             "ejemplar_id": ejemplar.id,
             "codigo": ejemplar.codigo,
         }
     }
+
+@router.get("/usuarios/{usuario_id}/historial", response_model=List[dict])
+def historial_prestamos_usuario_simple(usuario_id: int, db: Session = Depends(get_db)):
+    """
+    Historial simple de préstamos de un usuario (todos los estados).
+    Retorna información básica para mostrar en UI.
+    """
+    prestamos = (
+        db.query(Prestamo)
+        .filter(Prestamo.usuario_id == usuario_id)
+        .order_by(Prestamo.fecha_prestamo.desc())
+        .all()
+    )
+    resultado = []
+    for p in prestamos:
+        estado = p.estado.value if hasattr(p.estado, "value") else p.estado
+        resultado.append(
+            {
+                "id": p.id,
+                "estado": estado,
+                "fecha_prestamo": p.fecha_prestamo,
+                "fecha_devolucion_estimada": p.fecha_devolucion_estimada,
+                "fecha_devolucion_real": p.fecha_devolucion_real,
+                "isbn_asociado": p.isbn_asociado,
+            }
+        )
+    return resultado
 
 @router.get("/buscar-por-isbn/{isbn}", response_model=dict)
 def buscar_prestamo_por_isbn(
@@ -170,6 +218,7 @@ def buscar_prestamo_por_isbn(
         "prestamo": {
             "id": prestamo.id,
             "estado": estado_str,
+            "isbn_asociado": prestamo.isbn_asociado,
             "fecha_prestamo": prestamo.fecha_prestamo,
             "fecha_devolucion_estimada": prestamo.fecha_devolucion_estimada,
         },
@@ -191,6 +240,86 @@ def buscar_prestamo_por_isbn(
             "edicion": documento.edicion,
         },
         "vencido": vencido,
+    }
+
+@router.post("/devolver-por-rut-isbn", response_model=dict)
+def devolver_por_rut_isbn(payload: DevolucionRutIsbn, db: Session = Depends(get_db)):
+    """
+    Marca como devuelto el préstamo activo/vencido de un usuario por RUT e ISBN.
+    Incrementa existencias del documento y marca ejemplar como disponible.
+    """
+    rut_formateado = formatear_rut(payload.rut)
+
+    usuario = db.query(Usuario).filter(Usuario.rut == rut_formateado).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado para ese RUT")
+
+    documento = db.query(Documento).filter(Documento.edicion == payload.isbn).first()
+    if not documento:
+        raise HTTPException(status_code=404, detail="Documento no encontrado para ese ISBN")
+
+    prestamo = (
+        db.query(Prestamo)
+        .join(DetallePrestamo, Prestamo.id == DetallePrestamo.prestamo_id)
+        .join(Ejemplar, Ejemplar.id == DetallePrestamo.ejemplar_id)
+        .filter(
+            Prestamo.usuario_id == usuario.id,
+            Prestamo.isbn_asociado == payload.isbn,
+            Ejemplar.documento_id == documento.id,
+            Prestamo.estado.in_([EstadoPrestamo.activo, EstadoPrestamo.vencido])
+        )
+        .order_by(Prestamo.fecha_prestamo.desc())
+        .first()
+    )
+
+    if not prestamo:
+        raise HTTPException(status_code=404, detail="No hay préstamo activo/vencido para ese usuario y ISBN")
+
+    ahora = datetime.now(timezone.utc)
+    prestamo.estado = EstadoPrestamo.devuelto
+    prestamo.fecha_devolucion_real = ahora
+    prestamo.hora_devolucion_real = ahora.time()
+
+    detalles = db.query(DetallePrestamo).filter(DetallePrestamo.prestamo_id == prestamo.id).all()
+    ejemplar_ids = [d.ejemplar_id for d in detalles]
+    if ejemplar_ids:
+        db.query(Ejemplar).filter(Ejemplar.id.in_(ejemplar_ids)).update(
+            {"estado": "disponible"}, synchronize_session=False
+        )
+
+    delta_existencias = len(ejemplar_ids) or 1
+    documento.existencias = (documento.existencias or 0) + delta_existencias
+
+    db.commit()
+    db.refresh(prestamo)
+    db.refresh(documento)
+
+    estado_str = prestamo.estado.value if hasattr(prestamo.estado, "value") else prestamo.estado
+
+    return {
+        "prestamo": {
+            "id": prestamo.id,
+            "estado": estado_str,
+            "fecha_prestamo": prestamo.fecha_prestamo,
+            "fecha_devolucion_estimada": prestamo.fecha_devolucion_estimada,
+            "fecha_devolucion_real": prestamo.fecha_devolucion_real,
+        },
+        "usuario": {
+            "id": usuario.id,
+            "rut": usuario.rut,
+            "nombres": usuario.nombres,
+            "apellidos": usuario.apellidos,
+            "email": usuario.email,
+        },
+        "documento": {
+            "id": documento.id,
+            "titulo": documento.titulo,
+            "autor": documento.autor,
+            "anio": documento.anio,
+            "categoria": documento.categoria,
+            "edicion": documento.edicion,
+            "existencias": documento.existencias,
+        },
     }
 
 @router.post("/registrar", response_model=PrestamoResponse)

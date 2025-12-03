@@ -9,6 +9,7 @@ class DocumentoCrear(BaseModel):
     autor: str
     editorial: Optional[str] = None
     resumen: Optional[str] = None
+    link: Optional[str] = None
     anio: Optional[int] = None
     edicion: Optional[str] = None
     categoria: Optional[str] = None
@@ -40,6 +41,7 @@ class DocumentoActualizar(BaseModel):
     autor: Optional[str] = None
     editorial: Optional[str] = None
     resumen: Optional[str] = None
+    link: Optional[str] = None
     anio: Optional[int] = None
     edicion: Optional[str] = None
     categoria: Optional[str] = None

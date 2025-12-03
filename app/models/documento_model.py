@@ -27,6 +27,7 @@ def ingresar_documento(db: Session, data: dict) -> Documento:
             autor=data.get('autor'),
             editorial=data.get('editorial'),
             resumen=data.get('resumen'),
+            link=data.get('link'),
             anio=data.get('anio'),
             edicion=data.get('edicion'),
             categoria=data.get('categoria'),

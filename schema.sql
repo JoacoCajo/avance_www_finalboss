@@ -82,11 +82,13 @@ CREATE TABLE documentos (
     autor VARCHAR(255),
     editorial VARCHAR(255),
     existencias INTEGER NOT NULL DEFAULT 0,
-    disponible(if existencias > 0) BOOLEAN NOT NULL true,
+    disponible BOOLEAN GENERATED ALWAYS AS (existencias > 0) STORED,
     anio INTEGER,
     edicion VARCHAR(50),
     categoria VARCHAR(100),
     tipo_medio VARCHAR(50),
+    resumen TEXT,
+    LINK VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -156,6 +158,7 @@ CREATE TABLE prestamos (
     tipo_prestamo tipo_prestamo_enum NOT NULL,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     biblioteca_id INTEGER NOT NULL REFERENCES bibliotecas(id) ON DELETE RESTRICT,
+    ISBN_ASOCIADO VARCHAR(20),
     fecha_prestamo TIMESTAMP WITH TIME ZONE NOT NULL,
     hora_prestamo TIME NOT NULL,
     fecha_devolucion_estimada TIMESTAMP WITH TIME ZONE,
